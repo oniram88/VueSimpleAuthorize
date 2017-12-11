@@ -85,7 +85,7 @@ class VueSimpleAuthorize {
           }
         ));
       }
-
+      const old_style = el.style.display;
       el.style.display = 'none';
       Promise.all(autorizzazioni).then(function (valori) {
         let count = 0;
@@ -95,7 +95,7 @@ class VueSimpleAuthorize {
           }
         }
         if (count == valori.length) {
-          el.style.display = 'block';
+          el.style.display = old_style;
         }
       });
 
