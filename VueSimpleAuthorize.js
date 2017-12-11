@@ -41,11 +41,13 @@
 
 import includes from 'lodash.includes'
 import keys from 'lodash.keys'
+var md5 = require('md5');
 
 //Quando avremo tutto dentro a webpack con il polyfill per es6 faremo una bella cosa
 class VueSimpleAuthorize {
   constructor(cfgs = {}) {
     this.authorizations = cfgs.authorizations || {};
+    this.cached_requests = {};
   }
 
   subject_auth(subject) {
@@ -67,23 +69,46 @@ class VueSimpleAuthorize {
     }
   }
 
+  get_cached_result(key) {
+    return this.cached_requests[key] || null;
+  }
+
+  set_cached_result(key, value) {
+    this.cached_requests[key] = value;
+  }
+
   install(Vue, options) {
     this.authorizations = options.authorizations || {};
 
-    console.log(options);
     const self = this;
 
     Vue.directive('authorize', function (el, binding) {
-      console.log(self)
       let autorizzazioni = [];
       const chiavi = keys(binding.modifiers);
       for (let v in chiavi) {
-        autorizzazioni.push(self.authorize(binding.arg, chiavi[v])(binding.value,
-          {
-            subject: binding.arg,
-            action: chiavi[v]
-          }
-        ));
+        autorizzazioni.push(
+          new Promise(result => {
+            //inside the cache system
+
+            const key = md5(`${binding.arg}_${chiavi[v]}_${binding.value}`);
+
+            if (self.get_cached_result(key) === null) {
+              self.authorize(binding.arg, chiavi[v])(binding.value,
+                {
+                  subject: binding.arg,
+                  action: chiavi[v]
+                }
+              ).then(ris => {
+                self.set_cached_result(key, ris);
+                result(ris);
+              })
+            } else {
+              result(self.get_cached_result(key));
+            }
+
+
+          })
+        );
       }
       const old_style = el.style.display;
       el.style.display = 'none';

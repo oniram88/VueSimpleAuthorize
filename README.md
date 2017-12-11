@@ -86,4 +86,9 @@ If you want to make a wildcard for subject or action you can perform with *:
         }
       }
     
-    }        
+    }       
+
+**Notes**
+
+Every authorization is cached using subject_action_value ad key after 
+a reload all authorization should be repeated     
