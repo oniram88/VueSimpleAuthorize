@@ -1,0 +1,12 @@
+{
+  "name": "VueSimpleAuthorize",
+  "version": "1.0.0",
+  "description": "Simple authorization system for Vue",
+  "main": "index.js",
+  "repository": "https://github.com/oniram88/VueSimpleAuthorize",
+  "author": "Marino Bonetti <marinobonetti@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "lodash": "^4.17.4"
+  }
+}
