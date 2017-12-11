@@ -10,7 +10,7 @@ In your app
 
     const auth={
       'subject':{
-        'action?':(value)=>{
+        'action?':(value,options)=>{
           return new Promise(function (callback_result) {
     
             //anything you want to do with value and then respond
@@ -34,14 +34,34 @@ Then in your components you can use:
     
 Or you can make multiple authorizations in one time, only if all pass then the element is visible:
   
-   <a v-authorize:subject.action?.action2?.action3?="value">Hello world</a>   
+    <a v-authorize:subject.action?.action2?.action3?="value">Hello world</a>   
+    
+In the authorization method you will receive a options object containing:
+
+    {
+      subject:'my_super_subject',
+      action:'my_secret_action'
+    }    
+
+   
+Or you can make a request direct from code using the this.$authorize method 
+inside your components:
+
+    this.$authorize(subject, action, value).then(ris=>{
+      if(ris){
+        console.log('authorized);
+      }else{
+        console.log('NOT authorized);
+      }
+    
+    })   
    
 If you want to make a wildcard for subject or action you can perform with *:
 
       
     const auth={
       'subject':{
-        'action?':(value)=>{
+        'action?':(value,options)=>{
           return new Promise((callback_result)=>{
     
             //anything you want to do with value and then respond
@@ -52,14 +72,14 @@ If you want to make a wildcard for subject or action you can perform with *:
     
           });
         },
-        '*':(value)=>{
+        '*':(value,options)=>{
           return new Promise((callback_result)=>{
             callback_result(false);
           });
         }
       },
       '*':{
-        '*':(value)=>{
+        '*':(value,options)=>{
           return new Promise((callback_result)=>{
             callback_result(false);
           });

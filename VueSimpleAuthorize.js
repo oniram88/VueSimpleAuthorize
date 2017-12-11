@@ -78,7 +78,12 @@ class VueSimpleAuthorize {
       let autorizzazioni = [];
       const chiavi = keys(binding.modifiers);
       for (let v in chiavi) {
-        autorizzazioni.push(self.authorize(binding.arg, chiavi[v])(binding.value));
+        autorizzazioni.push(self.authorize(binding.arg, chiavi[v])(binding.value,
+          {
+            subject: binding.arg,
+            action: chiavi[v]
+          }
+        ));
       }
 
       el.style.display = 'none';
@@ -98,7 +103,10 @@ class VueSimpleAuthorize {
 
     //Return a Promise
     Vue.prototype.$authorize = function (subject, action, value) {
-      return self.authorize(subject, action)(value);
+      return self.authorize(subject, action)(value, {
+        subject: subject,
+        action: action
+      });
     };
 
   }
