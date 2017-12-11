@@ -1,5 +1,5 @@
 {
-  "name": "VueSimpleAuthorize",
+  "name": "vue_simple_authorize",
   "version": "1.0.0",
   "description": "Simple authorization system for Vue",
   "main": "VueSimpleAuthorize.js",
