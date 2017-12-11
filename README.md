@@ -1,6 +1,7 @@
 **VueSimpleAuthorize**
 
 ***Intallation***
+
 yarn add VueSimpleAuthorize
 
 In your app

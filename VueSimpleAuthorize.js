@@ -39,7 +39,8 @@
  *
  */
 
-import _ from 'lodash'
+import includes from 'lodash.includes'
+import keys from 'lodash.keys'
 
 //Quando avremo tutto dentro a webpack con il polyfill per es6 faremo una bella cosa
 class VueSimpleAuthorize {
@@ -48,7 +49,7 @@ class VueSimpleAuthorize {
   }
 
   subject_auth(subject) {
-    if (_.includes(Object.keys(this.authorizations), subject)) {
+    if (includes(keys(this.authorizations), subject)) {
       return this.authorizations[subject];
     } else {
       return this.authorizations['*'] || {};
@@ -57,9 +58,9 @@ class VueSimpleAuthorize {
 
 
   authorize(subject, action) {
-    action_auth = this.subject_auth(subject);
+    const action_auth = this.subject_auth(subject);
 
-    if (_.includes(Object.keys(action_auth), action)) {
+    if (includes(keys(action_auth), action)) {
       return action_auth[action];
     } else {
       return action_auth['*'] || new Promise((ris) => ris(false));
@@ -75,7 +76,7 @@ class VueSimpleAuthorize {
     Vue.directive('authorize', function (el, binding) {
       console.log(self)
       let autorizzazioni = [];
-      const chiavi = Object.keys(binding.modifiers);
+      const chiavi = keys(binding.modifiers);
       for (let v in chiavi) {
         autorizzazioni.push(self.authorize(binding.arg, chiavi[v])(binding.value));
       }
