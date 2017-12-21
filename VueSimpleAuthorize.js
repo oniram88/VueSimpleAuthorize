@@ -41,10 +41,10 @@
 
 import includes from 'lodash.includes'
 import keys from 'lodash.keys'
-var md5 = require('md5');
+const md5 = require('md5');
 
 //Quando avremo tutto dentro a webpack con il polyfill per es6 faremo una bella cosa
-class VueSimpleAuthorize {
+export default class VueSimpleAuthorize {
   constructor(cfgs = {}) {
     this.authorizations = cfgs.authorizations || {};
     this.cached_requests = {};
@@ -137,5 +137,3 @@ class VueSimpleAuthorize {
   }
 
 }
-
-export default VueSimpleAuthorize;
