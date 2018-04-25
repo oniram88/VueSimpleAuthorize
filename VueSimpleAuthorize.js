@@ -36,12 +36,30 @@
  *  azione? è una funzione nel namespace
  *  valore di passaggio è un valore da utilizzare nella richiesta dei permessi
  *
+ * oppure direttamente come componente:
+ *
+ * <authorize :authorizations="['soggetto.azione?.azione2?',valore di passaggio]">
+ *   qualsiasi cosa verrà renderizzata nel caso si è autorizzati
+ * </authorize>
+ *
+ * come per il precedente si può passare il soggetto dell'azione e il valore di passaggio
+ *
+ * inoltre è possibile passare anche il tag del componente che veramente si vuole
+ * renderizzare, altrimenti viene usato il default[div]
+ *
+ *  cont_tag:  tag dell'elemento
  *
  */
 
 import includes from 'lodash.includes'
 import keys from 'lodash.keys'
+import pick from 'lodash.pick'
+import isObject from 'lodash.isobject'
+import isUndefined from 'lodash.isundefined'
+
 const md5 = require('md5');
+const objectHash = require('object-hash');
+
 
 //Quando avremo tutto dentro a webpack con il polyfill per es6 faremo una bella cosa
 export default class VueSimpleAuthorize {
@@ -58,6 +76,55 @@ export default class VueSimpleAuthorize {
     }
   }
 
+  build_utorization_promise(subject_key, actions, object) {
+
+    const self = this;
+
+    return new Promise(function (s) {
+
+      let autorizzazioni = [];
+      let chiavi = actions;
+      for (let v in chiavi) {
+        autorizzazioni.push(
+          new Promise(result => {
+            //inside the cache system
+
+            const key = md5(`${subject_key}_${chiavi[v]}_${object}`);
+
+            if (self.get_cached_result(key) === null) {
+              self.authorize(subject_key, chiavi[v])(object,
+                {
+                  subject: subject_key,
+                  action: chiavi[v]
+                }
+              ).then(ris => {
+                self.set_cached_result(key, ris);
+                result(ris);
+              })
+            } else {
+              result(self.get_cached_result(key));
+            }
+
+
+          })
+        );
+      }
+
+      Promise.all(autorizzazioni).then(function (valori) {
+        let count = 0;
+        for (let v in valori) {
+          if (valori[v]) {
+            count++;
+          }
+        }
+        s(count == valori.length);
+
+      });
+
+    });
+
+
+  };
 
   authorize(subject, action) {
     const action_auth = this.subject_auth(subject);
@@ -83,47 +150,81 @@ export default class VueSimpleAuthorize {
     const self = this;
 
     Vue.directive('authorize', function (el, binding) {
-      let autorizzazioni = [];
-      const chiavi = keys(binding.modifiers);
-      for (let v in chiavi) {
-        autorizzazioni.push(
-          new Promise(result => {
-            //inside the cache system
 
-            const key = md5(`${binding.arg}_${chiavi[v]}_${binding.value}`);
-
-            if (self.get_cached_result(key) === null) {
-              self.authorize(binding.arg, chiavi[v])(binding.value,
-                {
-                  subject: binding.arg,
-                  action: chiavi[v]
-                }
-              ).then(ris => {
-                self.set_cached_result(key, ris);
-                result(ris);
-              })
-            } else {
-              result(self.get_cached_result(key));
-            }
-
-
-          })
-        );
-      }
+      var chiavi = Object.keys(binding.modifiers);
       const old_style = el.style.display;
       el.style.display = 'none';
-      Promise.all(autorizzazioni).then(function (valori) {
-        let count = 0;
-        for (let v in valori) {
-          if (valori[v]) {
-            count++;
-          }
-        }
-        if (count == valori.length) {
+      self.build_utorization_promise(binding.arg, chiavi, binding.value).then(function (ris) {
+        if (ris) {
           el.style.display = old_style;
         }
       });
 
+    });
+
+    Vue.component('authorize', {
+      render: function (createElement) {
+
+        let children = this.$slots.default;
+
+        let refs = this.authorizations[0].split('.');
+        let subject = refs[0];
+        let actions = refs.slice(1);
+        let object = this.authorizations[1];
+
+        let key = subject + "_" + actions + "_" + (isObject(object) ? objectHash.sha1(pick(object, this.cache_keys)) : object);
+        // Se non è autorizzato
+        if (!this.is_authorized(key)) {
+          children = [];
+          // se non ho controllato l'autorizzazione
+
+          if (!this.is_authorization_checked(key)) {
+            let that = this;
+            that.$set(that.authorization_checked, key, true);
+
+            self.build_utorization_promise(subject, actions, object).then(function (ris) {
+              that.$set(that.authorized, key, ris);
+            });
+
+          }
+        }
+
+        return createElement(
+          this.cont_tag || 'div',   // tag name
+          children // array of children
+        )
+
+      },
+      props: {
+        cont_tag: {
+          type: String
+        },
+        authorizations: {
+          type: Array
+        },
+        //Indetifica un array di chiavi da tener in considerazione per
+        // generare la chiave di cache su una determinato oggetto
+        cache_keys: {
+          type: Array,
+          default: function () {
+            return ['id'];
+          }
+        }
+      },
+      data: function () {
+        return {
+          authorized: {},
+          authorization_checked: {}
+        }
+      },
+      methods: {
+        is_authorized: function (key) {
+          return !isUndefined(this.authorized[key]) && this.authorized[key];
+        },
+        is_authorization_checked: function (key) {
+          return !isUndefined(this.authorization_checked[key]);
+        }
+      }
     });
 
     //Return a Promise
